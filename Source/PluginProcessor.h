@@ -82,7 +82,7 @@ private:
 	enum ChainPositions {
 		LowCut,
 		Peak,
-		High
+		HighCut
 	};
 
 	void updatePeakFilter(const ChainSettings &chainSettings);
@@ -120,6 +120,11 @@ private:
 				break;
 		}
 	}
+
+	void updateLowCutFilters(const ChainSettings &chainSettings);
+	void updateHighCutFilters(const ChainSettings &chainSettings);
+
+	void updateFilters();
 
 	//==============================================================================
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleEQAudioProcessor)
