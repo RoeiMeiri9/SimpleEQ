@@ -106,60 +106,16 @@ void SimpleEQAudioProcessor::prepareToPlay(double sampleRate, int samplesPerBloc
 
 	updatePeakFilter(chainSettings);
 
-	auto cutCoefficient = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(
+	auto cutCoefficients = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(
 		chainSettings.lowCutFreq,
 		sampleRate,
 		((chainSettings.lowCutSlope + 1) * 2));
 
 	auto &leftLowCut = leftChain.get<ChainPositions::LowCut>();
-
-	leftLowCut.setBypassed<0>(true);
-	leftLowCut.setBypassed<1>(true);
-	leftLowCut.setBypassed<2>(true);
-	leftLowCut.setBypassed<3>(true);
-
 	auto &rightLowCut = rightChain.get<ChainPositions::LowCut>();
 
-	rightLowCut.setBypassed<0>(true);
-	rightLowCut.setBypassed<1>(true);
-	rightLowCut.setBypassed<2>(true);
-	rightLowCut.setBypassed<3>(true);
-
-#define UPDATE_STAGE(index) \
-    *leftLowCut.get<index>().coefficients = *cutCoefficient[index]; \
-    *rightLowCut.get<index>().coefficients = *cutCoefficient[index]; \
-    leftLowCut.setBypassed<index>(false); \
-    rightLowCut.setBypassed<index>(false);
-
-	switch (chainSettings.lowCutSlope) {
-		case Slope_12:
-		{
-			UPDATE_STAGE(0);
-			break;
-		}
-		case Slope_24:
-		{
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			break;
-		}
-		case Slope_36:
-		{
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			UPDATE_STAGE(2);
-			break;
-		}
-		case Slope_48:
-		{
-
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			UPDATE_STAGE(2);
-			UPDATE_STAGE(3);
-			break;
-		}
-	}
+	updateCutFilter(leftLowCut, cutCoefficients, chainSettings.lowCutSlope);
+	updateCutFilter(rightLowCut, cutCoefficients, chainSettings.lowCutSlope);
 }
 
 void SimpleEQAudioProcessor::releaseResources() {
@@ -210,62 +166,15 @@ void SimpleEQAudioProcessor::processBlock(juce::AudioBuffer<float> &buffer,
 
 	updatePeakFilter(chainSettings);
 
-	auto cutCoefficient = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(
+	auto cutCoefficients = juce::dsp::FilterDesign<float>::designIIRHighpassHighOrderButterworthMethod(
 		chainSettings.lowCutFreq,
 		getSampleRate(),
 		((chainSettings.lowCutSlope + 1) * 2));
-
 	auto &leftLowCut = leftChain.get<ChainPositions::LowCut>();
-
-	leftLowCut.setBypassed<0>(true);
-	leftLowCut.setBypassed<1>(true);
-	leftLowCut.setBypassed<2>(true);
-	leftLowCut.setBypassed<3>(true);
-
 	auto &rightLowCut = rightChain.get<ChainPositions::LowCut>();
 
-	rightLowCut.setBypassed<0>(true);
-	rightLowCut.setBypassed<1>(true);
-	rightLowCut.setBypassed<2>(true);
-	rightLowCut.setBypassed<3>(true);
-
-#define UPDATE_STAGE(index) \
-    *leftLowCut.get<index>().coefficients = *cutCoefficient[index]; \
-    *rightLowCut.get<index>().coefficients = *cutCoefficient[index]; \
-    leftLowCut.setBypassed<index>(false); \
-    rightLowCut.setBypassed<index>(false);
-
-	switch (chainSettings.lowCutSlope) {
-		case Slope_12:
-		{
-			UPDATE_STAGE(0);
-			break;
-		}
-		case Slope_24:
-		{
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			break;
-		}
-		case Slope_36:
-		{
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			UPDATE_STAGE(2);
-			break;
-		}
-		case Slope_48:
-		{
-
-			UPDATE_STAGE(0);
-			UPDATE_STAGE(1);
-			UPDATE_STAGE(2);
-			UPDATE_STAGE(3);
-			break;
-		}
-	}
-
-
+	updateCutFilter(leftLowCut, cutCoefficients, chainSettings.lowCutSlope);
+	updateCutFilter(rightLowCut, cutCoefficients, chainSettings.lowCutSlope);
 
 	juce::dsp::AudioBlock<float> block(buffer);
 
