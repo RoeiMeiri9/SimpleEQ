@@ -57,7 +57,7 @@ void LookAndFeel::drawRotarySlider(
 		r.setSize(strWidth + 4, rswl->getTextHeight() + 2);
 		r.setCentre(center);
 
-		g.setColour(Colours::black);
+		g.setColour(Colour::fromRGB(10u, 6u, 14u));
 		g.fillRect(r);
 
 		g.setColour(Colours::white);
@@ -169,6 +169,7 @@ juce::String RotarySliderWithLabels::getDisplayString() const {
 
 	return str;
 }
+
 //==============================================================================
 ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor &p): audioProcessor(p) {
 	const auto &params = audioProcessor.getParameters();
@@ -221,9 +222,11 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	using namespace juce;
 
 	// (Our component is opaque, so we must completely fill the background with a solid colour)
-	g.fillAll(Colours::black);
+	g.fillAll(Colour::fromRGB(10u, 6u, 14u));
 
-	auto responseArea = getLocalBounds();
+	g.drawImage(background, getLocalBounds().toFloat());
+
+	auto responseArea = getAnalysisArea();
 
 	auto w = responseArea.getWidth();
 
@@ -278,13 +281,93 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	}
 
 	g.setColour(Colours::orange);
-	g.drawRoundedRectangle(responseArea.toFloat(), 4.f, 1.f);
+	g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
 
 	g.setColour(Colours::white);
 	g.strokePath(responseCurve, PathStrokeType(2.f));
-
 }
 
+void ResponseCurveComponent::resized() {
+	using namespace juce;
+	background = Image(Image::PixelFormat::ARGB, getWidth(), getHeight(), true);
+
+	juce::Colour BrightLine = Colour::fromRGBA(255u, 255u, 255u, 50u);
+	juce::Colour DarkLine = Colour::fromRGBA(255u, 255u, 255u, 25u);
+
+	Graphics g(background);
+
+	const Array<float> freqs{
+		20, 30, 40, 50, 60, 70, 80, 90,
+		100, 200, 300, 400, 500, 600, 700, 800, 900,
+		1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000,
+		10000, 20000
+	};
+
+	auto renderArea = getAnalysisArea();
+	auto width = renderArea.getWidth();
+	auto left = renderArea.getX();
+	auto right = renderArea.getRight();
+	auto top = renderArea.getY();
+	auto bottom = renderArea.getBottom();
+
+	Array<float> xs;
+
+	for (float f : freqs) {
+		auto normX = mapFromLog10(f, 20.f, 20000.f);
+		xs.add(left + width * normX);
+	}
+
+	std::size_t i = 0;
+
+	for (float x : xs) {
+		g.setColour(isPowerOfTen(freqs[i]) ? BrightLine : DarkLine);
+		g.drawVerticalLine(x, top, bottom);
+		++i;
+	}
+
+	const Array<float> gain{
+		24, 12, 0, -12, -24
+	};
+
+	for (float gDb : gain) {
+		auto y = jmap(gDb, -24.f, 24.f, static_cast<float>(bottom), static_cast<float>(top));
+
+		g.setColour(gDb == 0 ? BrightLine : DarkLine);
+		g.drawHorizontalLine(y, left, right);
+	}
+}
+
+bool ResponseCurveComponent::isPowerOfTen(float num) {
+	if (num <= 0)
+		return false;
+
+	float logVal = std::log10(num);
+	return std::floor(logVal) == logVal;
+}
+
+juce::Rectangle<int> ResponseCurveComponent::getRenderArea() {
+	auto bounds = getLocalBounds();
+
+	//bounds.reduce(10, /*JUCE_LIVE_CONSTANT(10),*/ 
+	//			  8 /*JUCE_LIVE_CONSTANT(8)*/);
+
+	bounds.removeFromTop(12);
+	bounds.removeFromBottom(2);
+
+	bounds.removeFromLeft(20);
+	bounds.removeFromRight(20);
+
+	return bounds;
+}
+
+juce::Rectangle<int> ResponseCurveComponent::getAnalysisArea() {
+	auto bounds = getRenderArea();
+
+	bounds.removeFromTop(4);
+	bounds.removeFromBottom(4);
+
+	return bounds;
+}
 
 //==============================================================================
 SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcessor &p)
@@ -337,7 +420,9 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 		addAndMakeVisible(comp);
 	}
 
-	setSize(600, 400);
+	setResizable(true, false);
+
+	setSize(1280, 720);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor() {
@@ -348,7 +433,7 @@ void SimpleEQAudioProcessorEditor::paint(juce::Graphics &g) {
 	using namespace juce;
 
 	// (Our component is opaque, so we must completely fill the background with a solid colour)
-	g.fillAll(Colours::black);
+	g.fillAll(Colour::fromRGB(10u, 6u, 14u));
 }
 
 void SimpleEQAudioProcessorEditor::resized() {
