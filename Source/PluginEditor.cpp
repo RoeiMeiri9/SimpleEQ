@@ -353,6 +353,13 @@ void ResponseCurveComponent::resized() {
 
 		g.setColour(TextColour);
 		g.drawFittedText(str, r, juce::Justification::centred, 1);
+
+		str.clear();
+		str << (gDb - 24.f);
+		r.setX(5);
+		textWidth = g.getCurrentFont().getStringWidth(str);
+		r.setSize(textWidth, fontHeight);
+		g.drawFittedText(str, r, juce::Justification::centred, 1);
 	}
 
 	for (int i = 0; i < freqs.size(); ++i) {
@@ -400,7 +407,7 @@ juce::Rectangle<int> ResponseCurveComponent::getRenderArea() {
 	bounds.removeFromTop(12);
 	bounds.removeFromBottom(2);
 
-	bounds.removeFromLeft(20);
+	bounds.removeFromLeft(30);
 	bounds.removeFromRight(30);
 
 	return bounds;
