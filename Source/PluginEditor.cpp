@@ -280,8 +280,8 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 		responseCurve.lineTo(responseArea.getX() + i, map(mags[i]));
 	}
 
-	g.setColour(Colours::orange);
-	g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
+	//g.setColour(Colours::orange);
+	//g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
 
 	g.setColour(Colours::white);
 	g.strokePath(responseCurve, PathStrokeType(2.f));
@@ -291,6 +291,7 @@ void ResponseCurveComponent::resized() {
 	using namespace juce;
 	background = Image(Image::PixelFormat::ARGB, getWidth(), getHeight(), true);
 
+	juce::Colour TextColour = Colour::fromRGBA(255u, 255u, 255u, 100u);
 	juce::Colour BrightLine = Colour::fromRGBA(255u, 255u, 255u, 50u);
 	juce::Colour DarkLine = Colour::fromRGBA(255u, 255u, 255u, 25u);
 
@@ -329,11 +330,56 @@ void ResponseCurveComponent::resized() {
 		24, 12, 0, -12, -24
 	};
 
+	const int fontHeight = 10;
+	g.setFont(fontHeight);
+
 	for (float gDb : gain) {
 		auto y = jmap(gDb, -24.f, 24.f, static_cast<float>(bottom), static_cast<float>(top));
 
 		g.setColour(gDb == 0 ? BrightLine : DarkLine);
 		g.drawHorizontalLine(y, left, right);
+
+		String str;
+		if (gDb > 0)
+			str << "+";
+		str << gDb;
+
+		auto textWidth = g.getCurrentFont().getStringWidth(str);
+
+		Rectangle<int> r;
+		r.setSize(textWidth, fontHeight);
+		r.setX(getWidth() - textWidth - 5);
+		r.setCentre(r.getCentreX(), y);
+
+		g.setColour(TextColour);
+		g.drawFittedText(str, r, juce::Justification::centred, 1);
+	}
+
+	for (int i = 0; i < freqs.size(); ++i) {
+		auto f = freqs[i];
+		if (!(isPowerOfTen(f) || isPowerOfTen(f / 2.f) || isPowerOfTen(f / 5.f))) {
+			continue;
+		}
+		auto x = xs[i];
+		bool addK = false;
+		String str;
+		if (f >= 1000) {
+			addK = true;
+			f /= 1000.f;
+		}
+
+		str << f;
+		if (addK)
+			str << "k";
+
+		auto textWidth = g.getCurrentFont().getStringWidth(str);
+
+		Rectangle<int> r;
+		r.setSize(textWidth, fontHeight);
+		r.setCentre(x, 0);
+		r.setY(bottom + 1);
+
+		g.drawFittedText(str, r, juce::Justification::centred, 1);
 	}
 }
 
@@ -355,7 +401,7 @@ juce::Rectangle<int> ResponseCurveComponent::getRenderArea() {
 	bounds.removeFromBottom(2);
 
 	bounds.removeFromLeft(20);
-	bounds.removeFromRight(20);
+	bounds.removeFromRight(30);
 
 	return bounds;
 }
@@ -364,7 +410,7 @@ juce::Rectangle<int> ResponseCurveComponent::getAnalysisArea() {
 	auto bounds = getRenderArea();
 
 	bounds.removeFromTop(4);
-	bounds.removeFromBottom(4);
+	bounds.removeFromBottom(14);
 
 	return bounds;
 }
