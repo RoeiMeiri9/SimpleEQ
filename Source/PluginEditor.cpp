@@ -97,6 +97,32 @@ void RotarySliderWithLabels::paint(juce::Graphics &g) {
 		endAng,
 		*this
 	);
+
+	auto center = sliderBounds.toFloat().getCentre();
+	auto radius = sliderBounds.getWidth() * 0.5f;
+
+	g.setColour(Colour(0u, 127u, 1u));
+	g.setFont(getTextHeight());
+
+	int numChoices = labels.size();
+	for (int i = 0; i < numChoices; ++i) {
+		auto pos = labels[i].pos;
+		jassert(0.f <= pos);
+		jassert(pos <= 1.f);
+
+		auto ang = jmap(pos, 0.f, 1.f, startAng, endAng);
+
+		// c is for the center of the text that will be displaying the minimum value possible for this knob.
+		auto c = center.getPointOnCircumference(radius + getTextHeight() * 0.5f + 1.f, ang);
+
+		Rectangle<float> r;
+		auto &str = labels[i].label;
+		r.setSize(g.getCurrentFont().getStringWidth(str), getTextHeight());
+		r.setCentre(c);
+		r.setY(r.getY() + getTextHeight());
+
+		g.drawFittedText(str, r.toNearestInt(), juce::Justification::centred, 1);
+	}
 }
 
 juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const {
@@ -115,7 +141,7 @@ juce::Rectangle<int> RotarySliderWithLabels::getSliderBounds() const {
 
 }
 
-juce::String RotarySliderWithLabels::getDisplayString() const{
+juce::String RotarySliderWithLabels::getDisplayString() const {
 	if (auto *choiceParam = dynamic_cast<juce::AudioParameterChoice *>(param))
 		return choiceParam->getCurrentChoiceName();
 
@@ -273,8 +299,13 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 	highCutFreqSliderAttachment(audioProcessor.apvts, "HighCut Freq", highCutFreqSlider),
 	lowCutSlopeSliderAttachment(audioProcessor.apvts, "LowCut Slope", lowCutSlopeSlider),
 	highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlopeSlider) {
+
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
+
+	peakFreqSlider.labels.add({ 0.f, "20Hz" });
+	peakFreqSlider.labels.add({ 1.f, "20kHz" });
+
 	for (auto *comp : getComps()) {
 		addAndMakeVisible(comp);
 	}
