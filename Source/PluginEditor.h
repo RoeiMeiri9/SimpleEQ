@@ -117,7 +117,7 @@ struct AnalyzerPathGenerator {
 
 		p.startNewSubPath(0, y);
 
-		const int pathResolution = 2; //you can draw the line-to's every 'pathResolution' pixels.
+		const int pathResolution = 1; //you can draw the line-to's every 'pathResolution' pixels.
 
 		for (int binNum = 1; binNum < numBins; binNum += pathResolution) {
 			auto y = map(renderData[binNum]);
@@ -189,6 +189,30 @@ private:
 	juce::String suffix;
 };
 
+struct PathProducer {
+
+	PathProducer(SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> &scsf):
+		leftChannelFifo(&scsf) {
+		FFTDataGenerator.changeOrder(FFTOrder::order2048);
+		monoBuffer.setSize(1, FFTDataGenerator.getFFTSize());
+	}
+
+	void process(juce::Rectangle<float> fftBounds, double sampleRate);
+
+	juce::Path getPath() { return FFTPath; }
+
+private:
+	SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> *leftChannelFifo;
+
+	juce::AudioBuffer<float> monoBuffer;
+
+	FFTDataGenerator<std::vector<float>> FFTDataGenerator;
+
+	AnalyzerPathGenerator<juce::Path> pathProducer;
+
+	juce::Path FFTPath;
+};
+
 struct ResponseCurveComponent: juce::Component,
 	juce::AudioProcessorParameter::Listener,
 	juce::Timer {
@@ -223,15 +247,7 @@ private:
 
 	juce::Rectangle<int> getAnalysisArea();
 
-	SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> *leftChannelFifo;
-
-	juce::AudioBuffer<float> monoBuffer;
-
-	FFTDataGenerator<std::vector<float>> leftChaneelFFTDataGenerator;
-
-	AnalyzerPathGenerator<juce::Path> pathProducer;
-
-	juce::Path leftChannelFFTPath;
+	PathProducer leftPathProducer, rightPathProducer;
 };
 
 //==============================================================================
