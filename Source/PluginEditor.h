@@ -126,7 +126,7 @@ struct AnalyzerPathGenerator {
 
 			if (!std::isnan(y) && !std::isinf(y)) {
 				auto binFreq = binNum * binWidth;
-				auto normalizedBinX = juce::mapFromLog10(binFreq, 1.f, 20000.f);
+				auto normalizedBinX = juce::mapFromLog10(binFreq, 20.f, 20000.f);
 				int binX = std::floor(normalizedBinX * width);
 				p.lineTo(binX, y);
 			}
@@ -212,6 +212,10 @@ private:
 
 	void updateChain();
 	bool isPowerOfTen(float num);
+
+	juce::Colour TextColour = juce::Colour::fromRGBA(255u, 255u, 255u, 100u);
+	juce::Colour BrightLine = juce::Colour::fromRGBA(255u, 255u, 255u, 50u);
+	juce::Colour DarkLine = juce::Colour::fromRGBA(255u, 255u, 255u, 25u);
 
 	juce::Image background;
 

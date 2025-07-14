@@ -339,8 +339,10 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 		responseCurve.lineTo(responseArea.getX() + i, map(mags[i]));
 	}
 
+	leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
+
 	// Change it so white later and add bg.
-	g.setColour(Colours::blue);
+	g.setColour(Colours::skyblue);
 	g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
 
 	//g.setColour(Colours::orange);
@@ -353,10 +355,6 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 void ResponseCurveComponent::resized() {
 	using namespace juce;
 	background = Image(Image::PixelFormat::ARGB, getWidth(), getHeight(), true);
-
-	juce::Colour TextColour = Colour::fromRGBA(255u, 255u, 255u, 100u);
-	juce::Colour BrightLine = Colour::fromRGBA(255u, 255u, 255u, 50u);
-	juce::Colour DarkLine = Colour::fromRGBA(255u, 255u, 255u, 25u);
 
 	Graphics g(background);
 
