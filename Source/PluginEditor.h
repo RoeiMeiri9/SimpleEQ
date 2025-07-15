@@ -189,6 +189,38 @@ private:
 	juce::String suffix;
 };
 
+struct ControlsContainer: public juce::Component {
+	ControlsContainer(const juce::String &title): titleLabel("Title", title) {
+		titleLabel.setJustificationType(juce::Justification::centred);
+		titleLabel.setColour(juce::Label::textColourId, juce::Colour(0xFFFEFFFF));
+		addAndMakeVisible(titleLabel);
+	}
+
+	void addKnob(RotarySliderWithLabels *knob) {
+		rswlList.add(knob);
+		addAndMakeVisible(knob);
+
+		repaint();
+		resized();
+	}
+
+	void paint(juce::Graphics &g) override;
+	void resized() override;
+
+private:
+	juce::Label titleLabel;
+	juce::OwnedArray<RotarySliderWithLabels> rswlList;
+
+	const int knobWidth = 100;
+	const int knobHeight = 100;
+	const int knobGap = 48;
+	const int frameGap = 16;
+	const int paddingRightLeft = 48;
+	const int paddingTopBottom = 24;
+	const int marginBypass = 8;
+	const int cornerRadius = 8;
+};
+
 struct PathProducer {
 
 	PathProducer(SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> &scsf):
@@ -277,6 +309,10 @@ private:
 
 	ResponseCurveComponent responseCurveComponent;
 
+	ControlsContainer lowCutControls,
+		peakControls,
+		highCutControls;
+
 	using APVTS = juce::AudioProcessorValueTreeState;
 	using Attachment = APVTS::SliderAttachment;
 
@@ -290,6 +326,7 @@ private:
 
 	std::vector<juce::Component *> getComps();
 
+	const int controlCardGap = 12;
 
 	JUCE_DECLARE_NON_COPYABLE_WITH_LEAK_DETECTOR(SimpleEQAudioProcessorEditor)
 };

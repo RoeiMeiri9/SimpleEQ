@@ -169,6 +169,39 @@ juce::String RotarySliderWithLabels::getDisplayString() const {
 
 	return str;
 }
+//==============================================================================
+
+
+void ControlsContainer::paint(juce::Graphics &g) {
+	auto bounds = getLocalBounds().toFloat();
+	g.setColour(juce::Colour(0xFF1E1E2C));
+	g.fillRoundedRectangle(bounds, cornerRadius);
+}
+
+void ControlsContainer::resized() {
+	
+	const int knobCount = rswlList.size();
+	if (knobCount == 0)
+		return;
+
+
+	const int width = knobCount * knobWidth + (knobCount - 1) * knobGap + paddingRightLeft * 2;
+	const int height = paddingTopBottom * 2 + knobHeight + frameGap + 20; // 20 = titleLabel height
+
+	setSize(width, height); // optional — only if you're letting the component resize itself
+
+	auto bounds = getLocalBounds().reduced(paddingRightLeft, paddingTopBottom);
+
+	int startX = bounds.getX();
+	int y = bounds.getY();
+
+	for (auto *knob : rswlList) {
+		knob->setBounds(startX, y, knobWidth, knobHeight);
+		startX += knobWidth + knobGap;
+	}
+
+	titleLabel.setBounds(bounds.withTop(y + knobHeight + frameGap).withHeight(20));
+}
 
 //==============================================================================
 ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor &p):
@@ -290,9 +323,6 @@ void ResponseCurveComponent::updateChain() {
 void ResponseCurveComponent::paint(juce::Graphics &g) {
 	using namespace juce;
 
-	// (Our component is opaque, so we must completely fill the background with a solid colour)
-	g.fillAll(Colour::fromRGB(10u, 6u, 14u));
-
 	g.drawImage(background, getLocalBounds().toFloat());
 
 	auto responseArea = getAnalysisArea();
@@ -355,18 +385,31 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 	rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 
-	// Change it so white later and add bg.
-	g.setColour(Colours::skyblue);
-	g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
+	ColourGradient FFTPathGradient(
+		Colour(0xFFFEFFFF),
+		0.0f, 0.0f,
+		Colour(0x08ADADB9),
+		0.0f, static_cast<float>(getHeight()),
+		false
+	);
 
-	g.setColour(Colours::lightyellow);
+	FFTPathGradient.multiplyOpacity(0.25f);
+
+	g.setGradientFill(FFTPathGradient);
+	g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
 	g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
 
+	ColourGradient ResponseCurveGradient(
+		Colour(0xFFFEFFFF),
+		0.0f, 0.0f,
+		Colour(0x08ADADB9),
+		0.0f, static_cast<float>(getHeight()),
+		false
+	);
 
-	//g.setColour(Colours::orange);
-	//g.drawRoundedRectangle(getRenderArea().toFloat(), 4.f, 1.f);
+	ResponseCurveGradient.addColour(0.6f, Colour(0xFFFEFFFF));
 
-	g.setColour(Colours::white);
+	g.setGradientFill(ResponseCurveGradient);
 	g.strokePath(responseCurve, PathStrokeType(2.f));
 }
 
@@ -505,6 +548,8 @@ juce::Rectangle<int> ResponseCurveComponent::getAnalysisArea() {
 SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcessor &p)
 	: AudioProcessorEditor(&p), audioProcessor(p),
 
+	responseCurveComponent(audioProcessor),
+
 	peakFreqSlider(*audioProcessor.apvts.getParameter("Peak Freq"), "Hz"),
 	peakGainSlider(*audioProcessor.apvts.getParameter("Peak Gain"), "dB"),
 	peakQualitySlider(*audioProcessor.apvts.getParameter("Peak Quality"), ""),
@@ -513,7 +558,6 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 	lowCutSlopeSlider(*audioProcessor.apvts.getParameter("LowCut Slope"), "dB/Oct"),
 	highCutSlopeSlider(*audioProcessor.apvts.getParameter("HighCut Slope"), "dB/Oct"),
 
-	responseCurveComponent(audioProcessor),
 
 	peakFreqSliderAttachment(audioProcessor.apvts, "Peak Freq", peakFreqSlider),
 	peakGainSliderAttachment(audioProcessor.apvts, "Peak Gain", peakGainSlider),
@@ -521,10 +565,16 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 	lowCutFreqSliderAttachment(audioProcessor.apvts, "LowCut Freq", lowCutFreqSlider),
 	highCutFreqSliderAttachment(audioProcessor.apvts, "HighCut Freq", highCutFreqSlider),
 	lowCutSlopeSliderAttachment(audioProcessor.apvts, "LowCut Slope", lowCutSlopeSlider),
-	highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlopeSlider) {
+	highCutSlopeSliderAttachment(audioProcessor.apvts, "HighCut Slope", highCutSlopeSlider),
+
+	lowCutControls("Low Cut"),
+	peakControls("Peak Control"),
+	highCutControls("HighCut"){
 
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
+
+
 
 	peakFreqSlider.labels.add({ 0.f, "20Hz" });
 	peakFreqSlider.labels.add({ 1.f, "20kHz" });
@@ -547,14 +597,22 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 	highCutSlopeSlider.labels.add({ 0.f, "12" });
 	highCutSlopeSlider.labels.add({ 1.f, "48" });
 
+	lowCutControls.addKnob(&lowCutFreqSlider);
+	lowCutControls.addKnob(&lowCutSlopeSlider);
+
+	peakControls.addKnob(&peakGainSlider);
+	peakControls.addKnob(&peakFreqSlider);
+	peakControls.addKnob(&peakQualitySlider);
+
+	highCutControls.addKnob(&highCutFreqSlider);
+	highCutControls.addKnob(&highCutSlopeSlider);
 
 	for (auto *comp : getComps()) {
 		addAndMakeVisible(comp);
 	}
 
-	setResizable(true, false);
-
-	setSize(1280, 720);
+	//setSize(1072, 792);
+	setSize(1258, 795);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor() {
@@ -564,8 +622,19 @@ SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor() {
 void SimpleEQAudioProcessorEditor::paint(juce::Graphics &g) {
 	using namespace juce;
 
-	// (Our component is opaque, so we must completely fill the background with a solid colour)
-	g.fillAll(Colour::fromRGB(10u, 6u, 14u));
+	ColourGradient bg(
+		Colour(0xFF1A1A26),
+		0.0f, 0.0f,
+		Colour(0xFF1A1A26),
+		0.0f, static_cast<float>(getHeight()),
+		false
+	);
+
+	bg.addColour(0.5f, Colour(0xFF1E1E2A));
+
+	g.setGradientFill(bg);
+	g.fillAll();
+
 }
 
 void SimpleEQAudioProcessorEditor::resized() {
@@ -573,35 +642,44 @@ void SimpleEQAudioProcessorEditor::resized() {
 	// subcomponents in your editor..
 
 	auto bounds = getLocalBounds();
-	float hRatio = 25.f / 100.f; //JUCE_LIVE_CONSTANT(33) / 100.f;
-	auto responseArea = bounds.removeFromTop(bounds.getHeight() * hRatio);
 
+	bounds.removeFromTop(80);
+
+	auto responseArea = bounds.removeFromTop(483);
+
+	responseCurveComponent.setOpaque(false);
 	responseCurveComponent.setBounds(responseArea);
 
-	bounds.removeFromTop(5);
+	bounds.removeFromTop(24);
 
-	auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
-	auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.5);
+	//auto lowCutArea = bounds.removeFromLeft(bounds.getWidth() * 0.33);
+	//auto highCutArea = bounds.removeFromRight(bounds.getWidth() * 0.5);
 
-	lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.5));
+	auto cardsBound = bounds;
+
+	cardsBound.setHeight(lowCutControls.getHeight());
+	cardsBound.removeFromLeft(24);
+// You can use the width you previously set
+	lowCutControls.setBounds(cardsBound.removeFromLeft(lowCutControls.getWidth() + controlCardGap));
+	peakControls.setBounds(cardsBound.removeFromLeft(peakControls.getWidth() + controlCardGap));
+	highCutControls.setBounds(cardsBound.removeFromLeft(highCutControls.getWidth()));
+
+
+	/*lowCutFreqSlider.setBounds(lowCutArea.removeFromTop(lowCutArea.getHeight() * 0.5));
 	lowCutSlopeSlider.setBounds(lowCutArea);
 	highCutFreqSlider.setBounds(highCutArea.removeFromTop(highCutArea.getHeight() * 0.5));
 	highCutSlopeSlider.setBounds(highCutArea);
 
 	peakFreqSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.33));
 	peakGainSlider.setBounds(bounds.removeFromTop(bounds.getHeight() * 0.5));
-	peakQualitySlider.setBounds(bounds);
+	peakQualitySlider.setBounds(bounds);*/
 }
 
 std::vector<juce::Component *> SimpleEQAudioProcessorEditor::getComps() {
 	return {
-		&peakFreqSlider,
-		&peakGainSlider,
-		&peakQualitySlider,
-		&lowCutFreqSlider,
-		&highCutFreqSlider,
-		&lowCutSlopeSlider,
-		&highCutSlopeSlider,
 		&responseCurveComponent,
+		&lowCutControls,
+		&peakControls,
+		&highCutControls
 	};
 }
