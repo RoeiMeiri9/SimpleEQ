@@ -39,6 +39,9 @@ struct Palette {
 	static const Colour BrightGrillLine;
 	static const Colour DarkGrillLine;
 
-	~Palette() { DBG("Palette destroyed"); }
-
+	// FFT Curve
+	static const Colour FFTBodyGradientTop;
+	static const Colour FFTBodyGradientBottom;
+	static const Colour FFTOutlineGradientTop;
+	static const Colour FFTOutlineGradientBottom;
 };

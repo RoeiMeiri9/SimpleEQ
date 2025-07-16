@@ -96,15 +96,18 @@ struct AnalyzerPathGenerator {
 		float binWidth,
 		float negativeInfinity
 	) {
+		if (envelopeData.size() != renderData.size())
+			envelopeData = std::vector<float>(renderData.size(), negativeInfinity);
+
 		auto top = fftBounds.getY();
-		auto bottom = fftBounds.getHeight();
+		auto bottom = fftBounds.getBottom();
 		auto width = fftBounds.getWidth();
 
 		int numBins = static_cast<int>(fftSize) / 2;
 
 		PathType p;
 
-		p.preallocateSpace(3 * static_cast<int>(fftBounds.getWidth()));
+		p.preallocateSpace(3 * static_cast<int>(fftBounds.getWidth()) + 2); // Maybe add 2 more slots for the new dots?
 
 		auto map = [bottom, top, negativeInfinity](float v) {
 			return juce::jmap(
@@ -112,16 +115,27 @@ struct AnalyzerPathGenerator {
 				negativeInfinity, 0.f,
 				bottom, top); // In the original implementation by Matkat Music, the bottom was (float)bottom, but bottom is already a float. So should I do the same?
 			};
-		auto y = map(renderData[0]);
+		auto y = map(envelopeData[0]);
 
 		jassert(!std::isnan(y) && !std::isinf(y));
 
-		p.startNewSubPath(0, y);
+		p.startNewSubPath(0, bottom);
+		p.lineTo(0, y);
 
 		const int pathResolution = 1; //you can draw the line-to's every 'pathResolution' pixels.
 
 		for (int binNum = 1; binNum < numBins; binNum += pathResolution) {
-			auto y = map(renderData[binNum]);
+			float inputVal = renderData[binNum];
+			float &env = envelopeData[binNum];
+
+			if (inputVal > env) {
+				env += (inputVal - env) * 0.5f; // This will make the bin to snap insantly
+			} else {
+				env -= 0.85f; // decay per frame (in dB)
+				env = std::max(env, inputVal); // don't decay below actual value
+			}
+
+			auto y = map(env);
 
 			jassert(!std::isnan(y) && !std::isinf(y));
 
@@ -129,9 +143,28 @@ struct AnalyzerPathGenerator {
 				auto binFreq = binNum * binWidth;
 				auto normalizedBinX = juce::mapFromLog10(binFreq, 20.f, 20000.f);
 				int binX = std::floor(normalizedBinX * width);
-				p.lineTo(binX, y);
+				
+				// Next point	
+				int nextI = binNum + pathResolution;
+				if (nextI >= numBins) {
+					p.lineTo(binX, y);
+				} else {
+					float nextVal = envelopeData[nextI];
+					float nextY = map(nextVal);
+					float nextFreq = nextI * binWidth;
+					auto nextNormalizedBinX = juce::mapFromLog10(nextFreq, 20.f, 20000.f);
+					int nextBinX = std::floor(nextNormalizedBinX * width);
+
+					float midX = (binX + nextBinX) * 0.5f;
+					float midY = (y + nextY) * 0.5f;
+
+					p.quadraticTo(binX, y, midX, midY);
+				}
+
 			}
 		}
+		p.lineTo(width, bottom);
+		p.closeSubPath();
 
 		pathFifo.push(p);
 	}
@@ -146,6 +179,8 @@ struct AnalyzerPathGenerator {
 
 private:
 	Fifo<PathType> pathFifo;
+	std::vector<float> envelopeData;
+
 };
 
 struct LookAndFeel: juce::LookAndFeel_V4 {
@@ -245,7 +280,7 @@ private:
 struct PathProducer {
 
 	PathProducer(SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> &scsf):
-		leftChannelFifo(&scsf) {
+		channelFifo(&scsf) {
 		FFTDataGenerator.changeOrder(FFTOrder::order2048);
 		monoBuffer.setSize(1, FFTDataGenerator.getFFTSize());
 	}
@@ -255,7 +290,7 @@ struct PathProducer {
 	juce::Path getPath() { return FFTPath; }
 
 private:
-	SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> *leftChannelFifo;
+	SingleChannelSampleFifo<SimpleEQAudioProcessor::BlockType> *channelFifo;
 
 	juce::AudioBuffer<float> monoBuffer;
 

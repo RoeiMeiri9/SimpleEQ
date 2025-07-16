@@ -322,8 +322,8 @@ void PathProducer::process(juce::Rectangle<float> fftBounds, double sampleRate) 
 	juce::AudioBuffer<float> tempIncomingBuffer;
 
 
-	while (leftChannelFifo->getNumCompleteBuffersAvailable() > 0) {
-		if (leftChannelFifo->getAudioBuffer(tempIncomingBuffer)) {
+	while (channelFifo->getNumCompleteBuffersAvailable() > 0) {
+		if (channelFifo->getAudioBuffer(tempIncomingBuffer)) {
 			auto size = tempIncomingBuffer.getNumSamples();
 
 			juce::FloatVectorOperations::copy(
@@ -472,19 +472,35 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 	rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 
-	ColourGradient FFTPathGradient(
-		Colour(0xFFFEFFFF),
-		0.0f, 0.0f,
-		Colour(0x08ADADB9),
-		0.0f, static_cast<float>(getHeight()),
+	auto FFTbounds = leftChannelFFTPath.getBounds();
+
+	ColourGradient FFTBodyGradient(
+		Palette::FFTBodyGradientBottom,
+		FFTbounds.getCentreX(), FFTbounds.getBottom(),
+		Palette::FFTBodyGradientTop,
+		FFTbounds.getCentreX(), FFTbounds.getY(),
+		false
+	);
+	g.setGradientFill(FFTBodyGradient);
+	g.fillPath(leftChannelFFTPath);
+	//g.fillPath(rightChannelFFTPath);
+
+
+	ColourGradient FFTOutlineGradient(
+		Palette::FFTOutlineGradientBottom, 
+		FFTbounds.getCentreX(), FFTbounds.getBottom(),
+		Palette::FFTOutlineGradientTop, 
+		FFTbounds.getCentreX(), FFTbounds.getY(),
 		false
 	);
 
-	FFTPathGradient.multiplyOpacity(0.25f);
+	FFTOutlineGradient.multiplyOpacity(0.5f);
 
-	g.setGradientFill(FFTPathGradient);
+	g.setGradientFill(FFTOutlineGradient);
 	g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
-	g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
+	//g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
+
+	
 
 	ColourGradient ResponseCurveGradient(
 		Colour(0xFFFEFFFF),
