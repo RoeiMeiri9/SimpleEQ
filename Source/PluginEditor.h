@@ -11,6 +11,7 @@
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
 #include "FontManager.h"
+#include "Palette.h"
 
 enum FFTOrder {
 	order2048 = 11,
@@ -121,7 +122,7 @@ struct AnalyzerPathGenerator {
 
 		p.startNewSubPath(0, bottom);
 		p.lineTo(0, y);
-		
+
 		for (int binNum = 1; binNum < numBins;) {
 			int pathResolution = juce::jmap<int>(binNum, 0, numBins, 2, 20);
 
@@ -143,7 +144,7 @@ struct AnalyzerPathGenerator {
 				auto binFreq = binNum * binWidth;
 				auto normalizedBinX = juce::mapFromLog10(binFreq, 20.f, 20000.f);
 				int binX = std::floor(normalizedBinX * width);
-				
+
 				// Next point	
 				int nextI = binNum + pathResolution;
 				if (nextI >= numBins) {
@@ -212,12 +213,13 @@ private:
 };
 
 struct RotarySliderWithLabels: juce::Slider {
-	RotarySliderWithLabels(juce::RangedAudioParameter &rap, const juce::String &unitSuffix): juce::Slider(
+	RotarySliderWithLabels(juce::RangedAudioParameter &rap, const juce::String &unitSuffix, const juce::String &displayName): juce::Slider(
 		juce::Slider::SliderStyle::RotaryHorizontalVerticalDrag,
 		juce::Slider::TextEntryBoxPosition::NoTextBox
 	),
 		param(&rap),
-		suffix(unitSuffix) {
+		suffix(unitSuffix),
+		name(displayName) {
 		setLookAndFeel(&lnf);
 	}
 
@@ -236,24 +238,32 @@ struct RotarySliderWithLabels: juce::Slider {
 	juce::Rectangle<int> getSliderBounds() const;
 	int getTextHeight() const { return 14; };
 	juce::String getDisplayString() const;
-
+	juce::String getName() const;
 private:
 	LookAndFeel lnf;
 
 	juce::RangedAudioParameter *param;
 	juce::String suffix;
+	juce::String name;
 };
 
 struct ControlsContainer: public juce::Component {
 	ControlsContainer(const juce::String &title): titleLabel("Title", title) {
 		titleLabel.setJustificationType(juce::Justification::centred);
-		titleLabel.setColour(juce::Label::textColourId, juce::Colour(0xFFFEFFFF));
+		titleLabel.setColour(juce::Label::textColourId, Palette::TextColour);
 		addAndMakeVisible(titleLabel);
 	}
 
 	void addKnob(RotarySliderWithLabels *knob) {
 		rswlList.add(knob);
 		addAndMakeVisible(knob);
+
+		auto label = rswlNameList.add(new juce::Label(knob->getName() + " Title", knob->getName()));
+		static juce::Font knobNameFont(FontManager::inter(knobLabelHeight, regular));
+		label->setFont(knobNameFont);
+		label->setColour(juce::Label::textColourId, Palette::TextColour);
+		label->setJustificationType(juce::Justification::centred);
+		addAndMakeVisible(*label);
 
 		repaint();
 		resized();
@@ -266,15 +276,19 @@ private:
 	juce::Label titleLabel;
 	//NOTE: Do NOT remove any object from here! it will cause use-after-free bugs.
 	juce::Array<RotarySliderWithLabels *> rswlList;
+	juce::OwnedArray<juce::Label> rswlNameList;
+
 
 	const int knobWidth = 100;
 	const int knobHeight = 100;
 	const int knobGap = 48;
-	const int frameGap = 16;
+	const int frameGap = 4;
 	const int paddingRightLeft = 48;
 	const int paddingTopBottom = 24;
 	const int marginBypass = 8;
 	const int cornerRadius = 8;
+	const int knobLabelHeight = 20;
+	const int CardNameTextHeight = 30;
 };
 
 struct PathProducer {

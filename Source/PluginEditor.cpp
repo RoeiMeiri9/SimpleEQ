@@ -253,6 +253,10 @@ juce::String RotarySliderWithLabels::getDisplayString() const {
 
 	return str;
 }
+
+juce::String RotarySliderWithLabels::getName() const{
+	return name;
+}
 //==============================================================================
 
 
@@ -268,27 +272,34 @@ void ControlsContainer::resized() {
 	if (knobCount == 0)
 		return;
 
-	static juce::Font font(FontManager::inter(28.f, regular));
-	titleLabel.setFont(font);
+	static juce::Font lableFont(FontManager::inter(CardNameTextHeight, regular));
+	titleLabel.setFont(lableFont);
 
-	int labelHeight = static_cast<int>(font.getHeight()); // add small margin
+	int knobNameHeight = static_cast<int>(knobLabelHeight); // add small margin
+	int labelHeight = static_cast<int>(lableFont.getHeight()); // add small margin
 
-	const int width = knobCount * knobWidth + (knobCount - 1) * knobGap + paddingRightLeft * 2;
-	const int height = paddingTopBottom * 2 + knobHeight + frameGap + labelHeight; // 20 = titleLabel height
-
-	setSize(width, height); // optional — only if you're letting the component resize itself
+ // optional — only if you're letting the component resize itself
 
 	auto bounds = getLocalBounds().reduced(paddingRightLeft, paddingTopBottom);
 
 	int startX = bounds.getX();
-	int y = bounds.getY();
+	int labelY = bounds.getY();
+	int knobY = labelY + labelHeight + 2;
+	for (int i = 0; i < rswlList.size(); ++i) {
+		const auto &label = rswlNameList[i];
+		label->setBounds(startX, labelY, knobWidth, labelHeight);
 
-	for (auto *knob : rswlList) {
-		knob->setBounds(startX, y, knobWidth, knobHeight);
+		const auto &knob = rswlList[i];
+		knob->setBounds(startX, knobY, knobWidth, knobHeight);
 		startX += knobWidth + knobGap;
 	}
 
-	titleLabel.setBounds(bounds.withTop(y + knobHeight + frameGap).withHeight(labelHeight));
+	titleLabel.setBounds(bounds.withTop(knobY + knobHeight + frameGap).withHeight(labelHeight));
+
+	const int height = titleLabel.getBounds().getBottom() + paddingTopBottom;
+	const int width = startX - knobGap + paddingRightLeft;
+
+	setSize(width, height);
 }
 
 //==============================================================================
@@ -488,9 +499,9 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 
 
 	ColourGradient FFTOutlineGradient(
-		Palette::FFTOutlineGradient3, 
+		Palette::FFTOutlineGradient3,
 		responseArea.getCentreX(), responseArea.getBottom(),
-		Palette::FFTOutlineGradient1, 
+		Palette::FFTOutlineGradient1,
 		responseArea.getCentreX(), responseArea.getY(),
 		false
 	);
@@ -502,7 +513,6 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	g.strokePath(leftChannelFFTPath, PathStrokeType(1.f));
 	//g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
 
-	
 	auto bounds = background.getBounds();
 
 	ColourGradient ResponseCurveGradient(
@@ -654,13 +664,13 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 
 	responseCurveComponent(audioProcessor),
 
-	peakFreqSlider(*audioProcessor.apvts.getParameter("Peak Freq"), "Hz"),
-	peakGainSlider(*audioProcessor.apvts.getParameter("Peak Gain"), "dB"),
-	peakQualitySlider(*audioProcessor.apvts.getParameter("Peak Quality"), ""),
-	lowCutFreqSlider(*audioProcessor.apvts.getParameter("LowCut Freq"), "Hz"),
-	highCutFreqSlider(*audioProcessor.apvts.getParameter("HighCut Freq"), "Hz"),
-	lowCutSlopeSlider(*audioProcessor.apvts.getParameter("LowCut Slope"), "dB/Oct"),
-	highCutSlopeSlider(*audioProcessor.apvts.getParameter("HighCut Slope"), "dB/Oct"),
+	peakFreqSlider(*audioProcessor.apvts.getParameter("Peak Freq"), "Hz", "FREQ"),
+	peakGainSlider(*audioProcessor.apvts.getParameter("Peak Gain"), "dB", "GAIN"),
+	peakQualitySlider(*audioProcessor.apvts.getParameter("Peak Quality"), "", "Q"),
+	lowCutFreqSlider(*audioProcessor.apvts.getParameter("LowCut Freq"), "Hz", "FREQ"),
+	highCutFreqSlider(*audioProcessor.apvts.getParameter("HighCut Freq"), "Hz", "FREQ"),
+	lowCutSlopeSlider(*audioProcessor.apvts.getParameter("LowCut Slope"), "dB/Oct", "SLOPE"),
+	highCutSlopeSlider(*audioProcessor.apvts.getParameter("HighCut Slope"), "dB/Oct", "SLOPE"),
 
 
 	peakFreqSliderAttachment(audioProcessor.apvts, "Peak Freq", peakFreqSlider),
@@ -715,8 +725,10 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 		addAndMakeVisible(comp);
 	}
 
+	//setResizable(true, false);
+
 	//setSize(1072, 792);
-	setSize(1258, 795);
+	setSize(1250, 823);
 }
 
 SimpleEQAudioProcessorEditor::~SimpleEQAudioProcessorEditor() {
