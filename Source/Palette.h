@@ -40,8 +40,10 @@ struct Palette {
 	static const Colour DarkGrillLine;
 
 	// FFT Curve
-	static const Colour FFTBodyGradientTop;
-	static const Colour FFTBodyGradientBottom;
-	static const Colour FFTOutlineGradientTop;
-	static const Colour FFTOutlineGradientBottom;
+	static const Colour FFTBodyGradient1;
+	static const Colour FFTBodyGradient2;
+	static const Colour FFTBodyGradient3;
+	static const Colour FFTOutlineGradient1;
+	static const Colour FFTOutlineGradient2;
+	static const Colour FFTOutlineGradient3;
 };

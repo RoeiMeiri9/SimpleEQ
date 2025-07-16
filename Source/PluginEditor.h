@@ -163,7 +163,7 @@ struct AnalyzerPathGenerator {
 
 			}
 		}
-		p.lineTo(width, bottom);
+		p.lineTo(width + 30.f, bottom);
 		p.closeSubPath();
 
 		pathFifo.push(p);

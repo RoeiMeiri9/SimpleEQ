@@ -338,7 +338,7 @@ void PathProducer::process(juce::Rectangle<float> fftBounds, double sampleRate) 
 				size
 			);
 
-			FFTDataGenerator.producerFFTDataForRendering(monoBuffer, -48.f);
+			FFTDataGenerator.producerFFTDataForRendering(monoBuffer, -96.f);
 		}
 	}
 
@@ -358,7 +358,7 @@ void PathProducer::process(juce::Rectangle<float> fftBounds, double sampleRate) 
 	while (FFTDataGenerator.getNumAvailableFFTDataBlocks() > 0) {
 		std::vector<float> fftData;
 		if (FFTDataGenerator.getFFTData(fftData)) {
-			pathProducer.generatePath(fftData, fftBounds, fftSize, binWidth, -48.f);
+			pathProducer.generatePath(fftData, fftBounds, fftSize, binWidth, -96.f);
 		}
 	}
 
@@ -377,6 +377,7 @@ void ResponseCurveComponent::timerCallback() {
 
 	auto fftBounds = getAnalysisArea().toFloat();
 	auto sampleRate = audioProcessor.getSampleRate();
+	fftBounds.removeFromRight(30.f);
 
 	leftPathProducer.process(fftBounds, sampleRate);
 	rightPathProducer.process(fftBounds, sampleRate);
@@ -472,27 +473,28 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	leftChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 	rightChannelFFTPath.applyTransform(AffineTransform().translation(responseArea.getX(), responseArea.getY()));
 
-	auto FFTbounds = leftChannelFFTPath.getBounds();
-
 	ColourGradient FFTBodyGradient(
-		Palette::FFTBodyGradientBottom,
-		FFTbounds.getCentreX(), FFTbounds.getBottom(),
-		Palette::FFTBodyGradientTop,
-		FFTbounds.getCentreX(), FFTbounds.getY(),
+		Palette::FFTBodyGradient3,
+		responseArea.getCentreX(), responseArea.getBottom(),
+		Palette::FFTBodyGradient1,
+		responseArea.getCentreX(), responseArea.getY(),
 		false
 	);
+	FFTBodyGradient.addColour(0.1f, Palette::FFTBodyGradient2);
+
 	g.setGradientFill(FFTBodyGradient);
 	g.fillPath(leftChannelFFTPath);
 	//g.fillPath(rightChannelFFTPath);
 
 
 	ColourGradient FFTOutlineGradient(
-		Palette::FFTOutlineGradientBottom, 
-		FFTbounds.getCentreX(), FFTbounds.getBottom(),
-		Palette::FFTOutlineGradientTop, 
-		FFTbounds.getCentreX(), FFTbounds.getY(),
+		Palette::FFTOutlineGradient3, 
+		responseArea.getCentreX(), responseArea.getBottom(),
+		Palette::FFTOutlineGradient1, 
+		responseArea.getCentreX(), responseArea.getY(),
 		false
 	);
+	FFTOutlineGradient.addColour(0.05f, Palette::FFTOutlineGradient2);
 
 	FFTOutlineGradient.multiplyOpacity(0.5f);
 
@@ -501,16 +503,15 @@ void ResponseCurveComponent::paint(juce::Graphics &g) {
 	//g.strokePath(rightChannelFFTPath, PathStrokeType(1.f));
 
 	
+	auto bounds = background.getBounds();
 
 	ColourGradient ResponseCurveGradient(
 		Colour(0xFFFEFFFF),
-		0.0f, 0.0f,
+		0.0f, static_cast<float>(bounds.getBottom() - 40.f),
 		Colour(0x08ADADB9),
-		0.0f, static_cast<float>(getHeight()),
+		0.0f, static_cast<float>(bounds.getBottom()),
 		false
 	);
-
-	ResponseCurveGradient.addColour(0.6f, Colour(0xFFFEFFFF));
 
 	g.setGradientFill(ResponseCurveGradient);
 	g.strokePath(responseCurve, PathStrokeType(2.f));
@@ -552,14 +553,14 @@ void ResponseCurveComponent::resized() {
 	}
 
 	const Array<float> gain{
-		24, 12, 0, -12, -24
+		12, 9, 6, 3, 0, -3, -6, -9, -12,
 	};
 
 	static juce::Font font(FontManager::inter(fontHeight, regular));
 	g.setFont(font);
 
 	for (float gDb : gain) {
-		auto y = jmap(gDb, -24.f, 24.f, static_cast<float>(bottom), static_cast<float>(top));
+		auto y = jmap(gDb, -12.f, 12.f, static_cast<float>(bottom), static_cast<float>(top));
 
 		g.setColour(gDb == 0 ? Palette::BrightGrillLine : Palette::DarkGrillLine);
 		g.drawHorizontalLine(y, left, right);
@@ -632,8 +633,8 @@ juce::Rectangle<int> ResponseCurveComponent::getRenderArea() {
 	bounds.removeFromTop(12);
 	bounds.removeFromBottom(2);
 
-	bounds.removeFromLeft(30);
-	bounds.removeFromRight(30);
+	bounds.removeFromLeft(25);
+	bounds.removeFromRight(25);
 
 	return bounds;
 }

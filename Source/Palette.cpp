@@ -39,7 +39,9 @@ const Colour Palette::ControlsContainer = Colour(0xFF1E1E2C);
 const Colour Palette::BrightGrillLine = Colour::fromRGBA(255u, 255u, 255u, 50u);
 const Colour Palette::DarkGrillLine = Colour::fromRGBA(255u, 255u, 255u, 25u);
 // FFT Curve
-const Colour Palette::FFTBodyGradientTop = Colour(0x20B2B2BE);
-const Colour Palette::FFTBodyGradientBottom = Colour(0x0EB2B2BE);
-const Colour Palette::FFTOutlineGradientTop = Palette::TextColour;
-const Colour Palette::FFTOutlineGradientBottom = Colour(0x14ADADB9);
+const Colour Palette::FFTBodyGradient1 = Colour(0x20B2B2BE);
+const Colour Palette::FFTBodyGradient2 = Colour(0x09B2B2BE);
+const Colour Palette::FFTBodyGradient3 = Colour(0x00B2B2BE);
+const Colour Palette::FFTOutlineGradient1 = Palette::TextColour;
+const Colour Palette::FFTOutlineGradient2= Colour(0x14ADADB9); 
+const Colour Palette::FFTOutlineGradient3 = Colour(0x05ADADB9);
