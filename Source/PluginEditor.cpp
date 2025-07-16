@@ -9,6 +9,7 @@
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
 
+
 void LookAndFeel::drawRotarySlider(
 	juce::Graphics &g,
 	int x,
@@ -24,44 +25,99 @@ void LookAndFeel::drawRotarySlider(
 
 	auto bounds = Rectangle<float>(x, y, width, height);
 
-	g.setColour(Colour(97u, 18u, 167u));
+	ColourGradient KnobBackground(
+		Colour(0xFF191A24),
+		0.0f, 0.0f,
+		Colour(0xFF222534),
+		0.0f, bounds.getHeight(),
+		false
+	);
+
+	g.setGradientFill(KnobBackground);
 	g.fillEllipse(bounds);
 
-	g.setColour(Colour(255u, 154u, 1u));
+	auto center = bounds.getCentre();
+
+	float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
+
+	juce::ColourGradient innerGlow(
+		Colour(0x0035374C),
+		center.x, center.y,
+		Colour(0xC535374C),
+		center.x - radius * 0.65f, center.y - radius,
+		true // radial
+	);
+
+	// Stop at 10px above center
+	float pixelOffset = radius * 0.6f;
+	float relativeStop = pixelOffset / radius;
+	innerGlow.addColour(relativeStop, Colour(0x3C35374C));
+
+	pixelOffset = radius * 0.3f;
+	relativeStop = pixelOffset / radius;
+	innerGlow.addColour(relativeStop, Colour(0x0035374C));
+
+	g.setGradientFill(innerGlow);
+	g.fillEllipse(bounds);
+
+	g.setColour(Colour(0xFF18181F));
 	g.drawEllipse(bounds, 1.f);
 
 	if (auto *rswl = dynamic_cast<RotarySliderWithLabels *>(&slider)) {
 		auto center = bounds.getCentre();
-		Path p;
-
-		Rectangle<float> r;
-		r.setLeft(center.getX() - 2);
-		r.setRight(center.getX() + 2);
-		r.setTop(bounds.getY());
-		r.setBottom(center.getY() - rswl->getTextHeight() * 1.5);
-
-		p.addRoundedRectangle(r, 2.f);
-
-		jassert(rotaryStartAngle < rotaryEndAngle); //TODO: Remove! (only if removed by the tutorial)
-
 		auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
 
-		p.applyTransform(AffineTransform().rotated(sliderAngRad, center.getX(), center.getY()));
+		auto radius = bounds.getWidth() * 0.5f - 4.0f;
 
+		// Build vertical indicator bar (4px wide, height based on text)
+		Rectangle<float> r;
+		r.setSize(3.0f, 14.0f);
+
+		// Calculate point on circumference for bottom center of the bar
+		auto circumferencePoint = juce::Point<float>(
+			center.x + radius * std::cos(sliderAngRad - juce::MathConstants<float>::halfPi),
+			center.y + radius * std::sin(sliderAngRad - juce::MathConstants<float>::halfPi)
+		);
+
+		// Set bar center so that bottom center is at circumferencePoint
+		r.setCentre(circumferencePoint.x, circumferencePoint.y + r.getHeight() * 0.5f);
+
+		Path p;
+		p.addRoundedRectangle(r, 2.0f);
+
+		// Optionally rotate the bar itself by sliderAngRad if you want it tilted
+		// If you want vertical bars along the circumference, comment this line out
+		p.applyTransform(AffineTransform::rotation(sliderAngRad, circumferencePoint.x, circumferencePoint.y));
+
+		auto bottomCenter = juce::Point<float>(r.getX() + r.getWidth() * 0.5f, r.getBottom());
+		auto topCenter = juce::Point<float>(r.getX() + r.getWidth() * 0.5f, r.getY());
+
+		auto start = rotatePointAround(bottomCenter, circumferencePoint, sliderAngRad);
+		auto end = rotatePointAround(topCenter, circumferencePoint, sliderAngRad);
+
+		juce::ColourGradient PositionIdentifierGradient(
+			juce::Colour(0x61BDBDC6), 
+			start.toFloat(),
+			juce::Colour(0xFFBDBDC6), 
+			end.toFloat(),
+			false
+		);
+
+		g.setGradientFill(PositionIdentifierGradient);
 		g.fillPath(p);
 
-		g.setFont(rswl->getTextHeight()); //TODO: USE THE FF FONT IN THE FUTURE! 
-		auto text = rswl->getDisplayString();
-		auto strWidth = g.getCurrentFont().getStringWidth(text);
+		//g.setFont(rswl->getTextHeight()); //TODO: USE THE FF FONT IN THE FUTURE! 
+		//auto text = rswl->getDisplayString();
+		//auto strWidth = g.getCurrentFont().getStringWidth(text);
 
-		r.setSize(strWidth + 4, rswl->getTextHeight() + 2);
-		r.setCentre(center);
+		//r.setSize(strWidth + 4, rswl->getTextHeight() + 2);
+		//r.setCentre(center);
 
-		g.setColour(Colour::fromRGB(10u, 6u, 14u));
-		g.fillRect(r);
+		//g.setColour(Colour::fromRGB(10u, 6u, 14u));
+		//g.fillRect(r);
 
-		g.setColour(Colours::white);
-		g.drawFittedText(text, r.toNearestInt(), juce::Justification::centred, 1);
+		//g.setColour(Colours::white);
+		//g.drawFittedText(text, r.toNearestInt(), juce::Justification::centred, 1);
 	}
 }
 

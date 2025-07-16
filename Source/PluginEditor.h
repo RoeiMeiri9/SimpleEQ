@@ -154,6 +154,22 @@ struct LookAndFeel: juce::LookAndFeel_V4 {
 						  float rotaryStartAngle,
 						  float rotaryEndAngle,
 						  juce::Slider &) override;
+
+	juce::Point<float> rotatePointAround(const juce::Point<float> &point,
+										 const juce::Point<float> &center,
+										 float angleRadians) {
+		 // Translate point to origin relative to center
+		auto translated = point - center;
+
+		// Rotate using rotation matrix
+		auto rotated = juce::Point<float>(
+			translated.x * std::cos(angleRadians) - translated.y * std::sin(angleRadians),
+			translated.x * std::sin(angleRadians) + translated.y * std::cos(angleRadians)
+		);
+
+		// Translate back
+		return rotated + center;
+	}
 };
 
 struct RotarySliderWithLabels: juce::Slider {
