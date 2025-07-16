@@ -10,6 +10,7 @@
 
 #include <JuceHeader.h>
 #include "PluginProcessor.h"
+#include "FontManager.h"
 
 enum FFTOrder {
 	order2048 = 11,
@@ -225,7 +226,8 @@ struct ControlsContainer: public juce::Component {
 
 private:
 	juce::Label titleLabel;
-	juce::OwnedArray<RotarySliderWithLabels> rswlList;
+	//NOTE: Do NOT remove any object from here! it will cause use-after-free bugs.
+	juce::Array<RotarySliderWithLabels *> rswlList;
 
 	const int knobWidth = 100;
 	const int knobHeight = 100;
@@ -285,9 +287,7 @@ private:
 	void updateChain();
 	bool isPowerOfTen(float num);
 
-	juce::Colour TextColour = juce::Colour::fromRGBA(255u, 255u, 255u, 100u);
-	juce::Colour BrightLine = juce::Colour::fromRGBA(255u, 255u, 255u, 50u);
-	juce::Colour DarkLine = juce::Colour::fromRGBA(255u, 255u, 255u, 25u);
+
 
 	juce::Image background;
 
@@ -296,6 +296,8 @@ private:
 	juce::Rectangle<int> getAnalysisArea();
 
 	PathProducer leftPathProducer, rightPathProducer;
+
+	const int fontHeight = 14;
 };
 
 //==============================================================================

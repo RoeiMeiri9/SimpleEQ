@@ -8,7 +8,7 @@
 
 #include "PluginProcessor.h"
 #include "PluginEditor.h"
-
+#include "Palette.h"
 
 void LookAndFeel::drawRotarySlider(
 	juce::Graphics &g,
@@ -26,9 +26,9 @@ void LookAndFeel::drawRotarySlider(
 	auto bounds = Rectangle<float>(x, y, width, height);
 
 	ColourGradient KnobBackground(
-		Colour(0xFF191A24),
+		Palette::KnobBGGradientTop,
 		0.0f, 0.0f,
-		Colour(0xFF222534),
+		Palette::KnobBGGradientBottom,
 		0.0f, bounds.getHeight(),
 		false
 	);
@@ -41,9 +41,9 @@ void LookAndFeel::drawRotarySlider(
 	float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
 
 	juce::ColourGradient innerGlow(
-		Colour(0x0035374C),
+		Palette::KnobInlineShadow3,
 		center.x, center.y,
-		Colour(0xC535374C),
+		Palette::KnobInlineShadow1,
 		center.x - radius * 0.65f, center.y - radius,
 		true // radial
 	);
@@ -51,16 +51,16 @@ void LookAndFeel::drawRotarySlider(
 	// Stop at 10px above center
 	float pixelOffset = radius * 0.6f;
 	float relativeStop = pixelOffset / radius;
-	innerGlow.addColour(relativeStop, Colour(0x3C35374C));
+	innerGlow.addColour(relativeStop, Palette::KnobInlineShadow2);
 
 	pixelOffset = radius * 0.3f;
 	relativeStop = pixelOffset / radius;
-	innerGlow.addColour(relativeStop, Colour(0x0035374C));
+	innerGlow.addColour(relativeStop, Palette::KnobInlineShadow3);
 
 	g.setGradientFill(innerGlow);
 	g.fillEllipse(bounds);
 
-	g.setColour(Colour(0xFF18181F));
+	g.setColour(Palette::KnobBorder);
 	g.drawEllipse(bounds, 1.f);
 
 	if (auto *rswl = dynamic_cast<RotarySliderWithLabels *>(&slider)) {
@@ -96,9 +96,9 @@ void LookAndFeel::drawRotarySlider(
 		auto end = rotatePointAround(topCenter, circumferencePoint, sliderAngRad);
 
 		juce::ColourGradient PositionIdentifierGradient(
-			juce::Colour(0x61BDBDC6), 
+			Palette::KnobPIGradientTop,
 			start.toFloat(),
-			juce::Colour(0xFFBDBDC6), 
+			Palette::KnobPIGradientBottom,
 			end.toFloat(),
 			false
 		);
@@ -157,8 +157,9 @@ void RotarySliderWithLabels::paint(juce::Graphics &g) {
 	auto center = sliderBounds.toFloat().getCentre();
 	auto radius = sliderBounds.getWidth() * 0.5f;
 
-	g.setColour(Colour(0u, 127u, 1u));
-	g.setFont(getTextHeight());
+	g.setColour(Palette::TextColour);
+	static juce::Font font(FontManager::inter(getTextHeight(), regular));
+	g.setFont(font);
 
 	int numChoices = labels.size();
 	for (int i = 0; i < numChoices; ++i) {
@@ -173,7 +174,7 @@ void RotarySliderWithLabels::paint(juce::Graphics &g) {
 
 		Rectangle<float> r;
 		auto &str = labels[i].label;
-		r.setSize(g.getCurrentFont().getStringWidth(str), getTextHeight());
+		r.setSize(font.getStringWidth(str), getTextHeight());
 		r.setCentre(c);
 		r.setY(r.getY() + getTextHeight());
 
@@ -230,7 +231,7 @@ juce::String RotarySliderWithLabels::getDisplayString() const {
 
 void ControlsContainer::paint(juce::Graphics &g) {
 	auto bounds = getLocalBounds().toFloat();
-	g.setColour(juce::Colour(0xFF1E1E2C));
+	g.setColour(Palette::ControlsContainer);
 	g.fillRoundedRectangle(bounds, cornerRadius);
 }
 
@@ -240,9 +241,13 @@ void ControlsContainer::resized() {
 	if (knobCount == 0)
 		return;
 
+	static juce::Font font(FontManager::inter(28.f, regular));
+	titleLabel.setFont(font);
+
+	int labelHeight = static_cast<int>(font.getHeight()); // add small margin
 
 	const int width = knobCount * knobWidth + (knobCount - 1) * knobGap + paddingRightLeft * 2;
-	const int height = paddingTopBottom * 2 + knobHeight + frameGap + 20; // 20 = titleLabel height
+	const int height = paddingTopBottom * 2 + knobHeight + frameGap + labelHeight; // 20 = titleLabel height
 
 	setSize(width, height); // optional — only if you're letting the component resize itself
 
@@ -255,8 +260,8 @@ void ControlsContainer::resized() {
 		knob->setBounds(startX, y, knobWidth, knobHeight);
 		startX += knobWidth + knobGap;
 	}
-
-	titleLabel.setBounds(bounds.withTop(y + knobHeight + frameGap).withHeight(20));
+	
+	titleLabel.setBounds(bounds.withTop(y + knobHeight + frameGap).withHeight(labelHeight));
 }
 
 //==============================================================================
@@ -499,7 +504,7 @@ void ResponseCurveComponent::resized() {
 	std::size_t i = 0;
 
 	for (float x : xs) {
-		g.setColour(isPowerOfTen(freqs[i]) ? BrightLine : DarkLine);
+		g.setColour(isPowerOfTen(freqs[i]) ? Palette::BrightGrillLine : Palette::DarkGrillLine);
 		g.drawVerticalLine(x, top, bottom);
 		++i;
 	}
@@ -507,14 +512,14 @@ void ResponseCurveComponent::resized() {
 	const Array<float> gain{
 		24, 12, 0, -12, -24
 	};
-
-	const int fontHeight = 10;
-	g.setFont(fontHeight);
+	
+	static juce::Font font(FontManager::inter(fontHeight, regular));
+	g.setFont(font);
 
 	for (float gDb : gain) {
 		auto y = jmap(gDb, -24.f, 24.f, static_cast<float>(bottom), static_cast<float>(top));
 
-		g.setColour(gDb == 0 ? BrightLine : DarkLine);
+		g.setColour(gDb == 0 ? Palette::BrightGrillLine : Palette::DarkGrillLine);
 		g.drawHorizontalLine(y, left, right);
 
 		String str;
@@ -522,14 +527,14 @@ void ResponseCurveComponent::resized() {
 			str << "+";
 		str << gDb;
 
-		auto textWidth = g.getCurrentFont().getStringWidth(str);
+		auto textWidth = font.getStringWidth(str);
 
 		Rectangle<int> r;
 		r.setSize(textWidth, fontHeight);
 		r.setX(getWidth() - textWidth - 5);
 		r.setCentre(r.getCentreX(), y);
 
-		g.setColour(TextColour);
+		g.setColour(Palette::TextColour);
 		g.drawFittedText(str, r, juce::Justification::centred, 1);
 
 		str.clear();

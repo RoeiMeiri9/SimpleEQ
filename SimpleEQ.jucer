@@ -4,6 +4,8 @@
               addUsingNamespaceToJuceHeader="0" jucerFormatVersion="1">
   <MAINGROUP id="o4XqqC" name="SimpleEQ">
     <GROUP id="{A3DF0E9C-43F3-0ADD-FA74-A4AA7B84FD2C}" name="Source">
+      <FILE id="Qq3uf6" name="Palette.cpp" compile="1" resource="0" file="Source/Palette.cpp"/>
+      <FILE id="lYBmpt" name="Palette.h" compile="0" resource="0" file="Source/Palette.h"/>
       <FILE id="p4p7s4" name="PluginProcessor.cpp" compile="1" resource="0"
             file="Source/PluginProcessor.cpp"/>
       <FILE id="lDYGUI" name="PluginProcessor.h" compile="0" resource="0"
@@ -11,7 +13,13 @@
       <FILE id="KfVRhv" name="PluginEditor.cpp" compile="1" resource="0"
             file="Source/PluginEditor.cpp"/>
       <FILE id="rd9Fqx" name="PluginEditor.h" compile="0" resource="0" file="Source/PluginEditor.h"/>
+      <FILE id="pNjHMh" name="FontManager.h" compile="0" resource="0" file="Source/FontManager.h"/>
+      <FILE id="hVB0ro" name="Inter_18pt-Regular.ttf" compile="0" resource="1"
+            file="Source/Fonts/Inter_18pt-Regular.ttf"/>
+      <FILE id="cBquKH" name="Inter_18pt-Bold.ttf" compile="0" resource="1"
+            file="Source/Fonts/Inter_18pt-Bold.ttf"/>
     </GROUP>
+    <FILE id="QpwUC2" name="FontManager.cpp" compile="1" resource="0" file="Source/FontManager.cpp"/>
   </MAINGROUP>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
