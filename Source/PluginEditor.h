@@ -287,8 +287,6 @@ private:
 	void updateChain();
 	bool isPowerOfTen(float num);
 
-
-
 	juce::Image background;
 
 	juce::Rectangle<int> getRenderArea();

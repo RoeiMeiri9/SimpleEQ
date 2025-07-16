@@ -236,7 +236,7 @@ void ControlsContainer::paint(juce::Graphics &g) {
 }
 
 void ControlsContainer::resized() {
-	
+
 	const int knobCount = rswlList.size();
 	if (knobCount == 0)
 		return;
@@ -260,7 +260,7 @@ void ControlsContainer::resized() {
 		knob->setBounds(startX, y, knobWidth, knobHeight);
 		startX += knobWidth + knobGap;
 	}
-	
+
 	titleLabel.setBounds(bounds.withTop(y + knobHeight + frameGap).withHeight(labelHeight));
 }
 
@@ -268,14 +268,13 @@ void ControlsContainer::resized() {
 ResponseCurveComponent::ResponseCurveComponent(SimpleEQAudioProcessor &p):
 	audioProcessor(p),
 	leftPathProducer(audioProcessor.leftChannelFifo),
-	rightPathProducer(audioProcessor.rightChannelFifo)
-{
+	rightPathProducer(audioProcessor.rightChannelFifo) {
 	const auto &params = audioProcessor.getParameters();
 	for (auto param : params) {
 		param->addListener(this);
 	}
 
-	
+
 	updateChain();
 
 	startTimerHz(60);
@@ -512,7 +511,7 @@ void ResponseCurveComponent::resized() {
 	const Array<float> gain{
 		24, 12, 0, -12, -24
 	};
-	
+
 	static juce::Font font(FontManager::inter(fontHeight, regular));
 	g.setFont(font);
 
@@ -630,7 +629,7 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 
 	lowCutControls("Low Cut"),
 	peakControls("Peak Control"),
-	highCutControls("HighCut"){
+	highCutControls("HighCut") {
 
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
