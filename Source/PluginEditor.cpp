@@ -28,8 +28,11 @@ void LookAndFeel::drawRotarySlider(
 	bounds.reduce(lineW, lineW);
 
 	if (auto *rswl = dynamic_cast<RotarySliderWithLabels *>(&slider)) {
+		const auto &range = rswl->getNormalisableRange();
+		float skewedProportional = range.convertTo0to1(rswl->getValue());
+
 		auto center = bounds.getCentre();
-		auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
+		auto sliderAngRad = jmap(skewedProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
 
 		float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
 		auto arcRadius = radius + lineW;
@@ -79,9 +82,11 @@ void LookAndFeel::drawRotarySlider(
 		float relativeStop = pixelOffset / radius;
 		innerGlow.addColour(relativeStop, Palette::KnobInlineShadow2);
 
-		pixelOffset = radius * 0.3f;
+		pixelOffset = radius * 0.4f;
 		relativeStop = pixelOffset / radius;
 		innerGlow.addColour(relativeStop, Palette::KnobInlineShadow3);
+
+		innerGlow.multiplyOpacity(0.8f);
 
 		g.setGradientFill(innerGlow);
 		g.fillEllipse(bounds);
@@ -651,7 +656,7 @@ SimpleEQAudioProcessorEditor::SimpleEQAudioProcessorEditor(SimpleEQAudioProcesso
 
 	lowCutControls("Low Cut"),
 	peakControls("Peak Control"),
-	highCutControls("HighCut") {
+	highCutControls("High Cut") {
 
 	// Make sure that before the constructor has finished, you've set the
 	// editor's size to whatever you need it to be.
