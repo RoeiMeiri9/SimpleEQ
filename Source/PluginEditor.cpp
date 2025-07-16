@@ -23,60 +23,82 @@ void LookAndFeel::drawRotarySlider(
 ) {
 	using namespace juce;
 
-	auto bounds = Rectangle<float>(x, y, width, height);
+	auto bounds = Rectangle<float>(x, y, width + lineW, height + lineW);
 
-	ColourGradient KnobBackground(
-		Palette::KnobBGGradientTop,
-		0.0f, 0.0f,
-		Palette::KnobBGGradientBottom,
-		0.0f, bounds.getHeight(),
-		false
-	);
-
-	g.setGradientFill(KnobBackground);
-	g.fillEllipse(bounds);
-
-	auto center = bounds.getCentre();
-
-	float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
-
-	juce::ColourGradient innerGlow(
-		Palette::KnobInlineShadow3,
-		center.x, center.y,
-		Palette::KnobInlineShadow1,
-		center.x - radius * 0.65f, center.y - radius,
-		true // radial
-	);
-
-	// Stop at 10px above center
-	float pixelOffset = radius * 0.6f;
-	float relativeStop = pixelOffset / radius;
-	innerGlow.addColour(relativeStop, Palette::KnobInlineShadow2);
-
-	pixelOffset = radius * 0.3f;
-	relativeStop = pixelOffset / radius;
-	innerGlow.addColour(relativeStop, Palette::KnobInlineShadow3);
-
-	g.setGradientFill(innerGlow);
-	g.fillEllipse(bounds);
-
-	g.setColour(Palette::KnobBorder);
-	g.drawEllipse(bounds, 1.f);
+	bounds.reduce(lineW, lineW);
 
 	if (auto *rswl = dynamic_cast<RotarySliderWithLabels *>(&slider)) {
 		auto center = bounds.getCentre();
 		auto sliderAngRad = jmap(sliderPosProportional, 0.f, 1.f, rotaryStartAngle, rotaryEndAngle);
 
-		auto radius = bounds.getWidth() * 0.5f - 4.0f;
+		float radius = juce::jmin(bounds.getWidth(), bounds.getHeight()) * 0.5f;
+		auto arcRadius = radius + lineW;
+
+		Path backgroundArc;
+		backgroundArc.addCentredArc(center.x, center.y, arcRadius, arcRadius,
+									0.0f, rotaryStartAngle, rotaryEndAngle, true);
+		g.setColour(Palette::KnobRange);
+		g.strokePath(backgroundArc, PathStrokeType(lineW));
+
+		// Draw value arc (slider angle)
+		Path valueArc;
+
+		valueArc.addCentredArc(center.x, center.y, arcRadius, arcRadius,
+							   0.0f, rotaryStartAngle, sliderAngRad, true);
+		g.setColour(Palette::KnobRangeApplied);
+		g.strokePath(valueArc, PathStrokeType(lineW));
+
+
+		// Draw the knob itself
+		Path knobShape;
+		knobShape.addEllipse(bounds);
+		DropShadow shadow(Colours::black.withAlpha(0.05f), 3, Point<int>(0, 2));
+		shadow.drawForPath(g, knobShape); // draw shadow
+
+		ColourGradient KnobBackground(
+			Palette::KnobBGGradientTop,
+			0.0f, 0.0f,
+			Palette::KnobBGGradientBottom,
+			0.0f, bounds.getHeight(),
+			false
+		);
+
+		g.setGradientFill(KnobBackground);
+		g.fillEllipse(bounds);
+
+		juce::ColourGradient innerGlow(
+			Palette::KnobInlineShadow3,
+			center.x, center.y,
+			Palette::KnobInlineShadow1,
+			center.x - radius * 0.65f, center.y - radius,
+			true // radial
+		);
+
+		// Stop at 10px above center
+		float pixelOffset = radius * 0.6f;
+		float relativeStop = pixelOffset / radius;
+		innerGlow.addColour(relativeStop, Palette::KnobInlineShadow2);
+
+		pixelOffset = radius * 0.3f;
+		relativeStop = pixelOffset / radius;
+		innerGlow.addColour(relativeStop, Palette::KnobInlineShadow3);
+
+		g.setGradientFill(innerGlow);
+		g.fillEllipse(bounds);
+
+		g.setColour(Palette::KnobBorder);
+		g.drawEllipse(bounds, 1.f);
 
 		// Build vertical indicator bar (4px wide, height based on text)
 		Rectangle<float> r;
 		r.setSize(3.0f, 14.0f);
 
+		auto innerRadius = bounds.getWidth() * 0.5f - 4.0f;
+
 		// Calculate point on circumference for bottom center of the bar
 		auto circumferencePoint = juce::Point<float>(
-			center.x + radius * std::cos(sliderAngRad - juce::MathConstants<float>::halfPi),
-			center.y + radius * std::sin(sliderAngRad - juce::MathConstants<float>::halfPi)
+			center.x + innerRadius * std::cos(sliderAngRad - juce::MathConstants<float>::halfPi),
+			center.y + innerRadius * std::sin(sliderAngRad - juce::MathConstants<float>::halfPi)
 		);
 
 		// Set bar center so that bottom center is at circumferencePoint

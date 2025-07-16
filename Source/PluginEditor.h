@@ -171,6 +171,9 @@ struct LookAndFeel: juce::LookAndFeel_V4 {
 		// Translate back
 		return rotated + center;
 	}
+
+private:
+	float lineW = 3.0f;
 };
 
 struct RotarySliderWithLabels: juce::Slider {
