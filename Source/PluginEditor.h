@@ -121,10 +121,10 @@ struct AnalyzerPathGenerator {
 
 		p.startNewSubPath(0, bottom);
 		p.lineTo(0, y);
+		
+		for (int binNum = 1; binNum < numBins;) {
+			int pathResolution = juce::jmap<int>(binNum, 0, numBins, 2, 20);
 
-		const int pathResolution = 2; //you can draw the line-to's every 'pathResolution' pixels.
-
-		for (int binNum = 1; binNum < numBins; binNum += pathResolution) {
 			float inputVal = renderData[binNum];
 			float &env = envelopeData[binNum];
 
@@ -160,8 +160,8 @@ struct AnalyzerPathGenerator {
 
 					p.quadraticTo(binX, y, midX, midY);
 				}
-
 			}
+			binNum += pathResolution;
 		}
 		p.lineTo(width + 30.f, bottom);
 		p.closeSubPath();
