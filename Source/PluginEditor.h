@@ -122,7 +122,7 @@ struct AnalyzerPathGenerator {
 		p.startNewSubPath(0, bottom);
 		p.lineTo(0, y);
 
-		const int pathResolution = 1; //you can draw the line-to's every 'pathResolution' pixels.
+		const int pathResolution = 2; //you can draw the line-to's every 'pathResolution' pixels.
 
 		for (int binNum = 1; binNum < numBins; binNum += pathResolution) {
 			float inputVal = renderData[binNum];
