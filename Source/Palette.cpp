@@ -29,7 +29,7 @@ const Colour Palette::KnobPIGradientTop = Colour(0x61BDBDC6);
 /*PI = Position Indicator*/
 const Colour Palette::KnobPIGradientBottom = Colour(0xFFBDBDC6);
 const Colour Palette::KnobRange = Colour(0xFF22222F);
-const Colour Palette::KnobRangeApplied = Palette::TextColour;
+const Colour Palette::KnobRangeApplied = Colour(0xF0FEFFFF);
 
 
 // Control Container
